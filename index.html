@@ -61,6 +61,56 @@
             <div class="col-8" id="main">
                 <div class="res-cons">
                     
+		    
+                        <article class="post">
+                            <header>
+                                <h1 class="post-title">
+                                    <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E4%BA%8C%E5%8F%89%E6%A0%91%E5%9F%BA%E7%A1%80/" title="【原创】二叉树基础" >【原创】二叉树基础</a>
+                                </h1>
+                            </header>
+                            <date class="post-meta meta-date">
+                                2020年5月17日
+                            </date>
+                            
+                            <div class="post-content">
+                                #include&lt;stdio.h&gt; #include&lt;stdlib.h&gt; //定义数据节点 typedef struct Node { char ch; struct Node *leftChildPtr; struct Node *rightChildPtr; }TreeNode,*TreeNodePtr; char *str = &quot;abc##d##ef##g##&quot;; //要创建的节点数据 /** * 创建一课二叉树 */ TreeNodePtr createBinaryTree(char ch) { if(ch == '\0' || ch == '#') { return NULL; } //如果不是#,则创建一个节点 TreeNodePtr ptr = (TreeNodePtr)malloc(sizeof(TreeNode)); ptr-&gt;ch = ch; str++; //外面指针走一个字符 ptr-&gt;leftChildPtr = createBinaryTree(*str);	str++; ptr-&gt;rightChildPtr = createBinaryTree(*str); return ptr; } /** * 前序遍历 */ void preTraverseTree(TreeNodePtr node) { if(node != NULL) { //std::cout &lt;&lt; node-&gt;ch &lt;&lt; &quot; -- &quot;; printf(&quot;%c&quot;,node-&gt;ch); printf(&quot; -- &quot;); preTraverseTree(node-&gt;leftChildPtr); preTraverseTree(node-&gt;rightChildPtr); }	} /** * 中序遍历 */ void inOrderTraverseTree(TreeNodePtr node) { if(node !……
+                            </div>
+                            <p class="readmore"><a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E4%BA%8C%E5%8F%89%E6%A0%91%E5%9F%BA%E7%A1%80/">阅读全文</a></p>
+                        </article>
+                    
+                    
+		    
+                        <article class="post">
+                            <header>
+                                <h1 class="post-title">
+                                    <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/" title="【原创】环境编程之进程" >【原创】环境编程之进程</a>
+                                </h1>
+                            </header>
+                            <date class="post-meta meta-date">
+                                2020年5月17日
+                            </date>
+                            
+                            <div class="post-content">
+                                 【原创总结】环境编程之进程 ​ 进程是我们操作系统相当重要的一个抽象，描述的白话一点，就是我们电脑上正在运行的程序。比如我们正在登陆的电脑微信，它就是一个进程。当我们的微信在没有被计算机加载到内存中去执行的时候，其实就是一堆躺在硬盘上睡大觉的二进制代码，那它的状态就不叫进程，而是叫程序。所以说，进程是一种活动状态，是有生命周期的。下面我们会详细的来说说，进程相关的一些知识。(主要围绕Linux系统展开)
+ 进程的创建，终止
+ 进程在内存中的布局
+ 进程的几种状态
+ 进程的调度
+ 进程在内核中的表示
+  1. 进程的创建，终止 ​ 在我们的Linux系统中，创建一个进程，需要用到一个系统提供给我们的一个系统调用。（系统调用：就是我们编写的用户程序，是没有权限越过操作系统的内核直接去访问一些资源，比如磁盘上的数据，为了安全和统一管理，提供了一些接口，我们就可以通过这些接口去访问了）一般我们叫syscall. fork() 正是系统提供给我们的主动去创建一个进程的系统调用。 定义如下：
+​ pid_t fork(void)
+fork没有参数，返回值是pid_t, 是一个非负整数，也就是我们的进程ID。 fork()调用后，返回2次，跟我们平时使用方法不太一样，这里要注意呀。 2种返回结果如下：
+pid_t ==0 : 是子进程返回 , pid_t &gt;0 是父进程返回。
+思考点，这里为什么返回值等于0是子进程，大于0是父进程呢？
+在APUE中，有详细描述。理由是：子进程把进程ID返回给父进程，因为一个父进程可以有多个子进程，没有其他的方式和函数可以获取到子进程的PID号。 而把0返回给子进程呢，则是一个子进程只有一个父进程，子进程可以通过getppid的方式获取到父进程的PID。
+当我们调用fork后，子进程比较简单粗暴的拷贝了父进程的东西，比如父进程的数据空间，堆和栈等，但是代码段是共享的。后面在进程的布局当中会详细讲到进程在内存中的一个具体形态。
+1.2 进程几种终止的方式
+ 在main函数中return 调用exit 调用_exit或者_Exit 最后一个子线程return 最后一个子线程调用pthread_exit 调用abort 当进程收到某种信号 最后一个线程对取消请求做出响应  2. 进程在内存中的布局 ……
+                            </div>
+                            <p class="readmore"><a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/">阅读全文</a></p>
+                        </article>
+                    
+                    
                     
 
 
@@ -83,6 +133,14 @@
     <section class="widget">
         <h3 class="widget-title">最近文章</h3>
 <ul class="widget-list">
+    
+    <li>
+        <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E4%BA%8C%E5%8F%89%E6%A0%91%E5%9F%BA%E7%A1%80/" title="【原创】二叉树基础">【原创】二叉树基础</a>
+    </li>
+    
+    <li>
+        <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/" title="【原创】环境编程之进程">【原创】环境编程之进程</a>
+    </li>
     
 </ul>
     </section>
