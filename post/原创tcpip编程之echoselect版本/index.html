@@ -7,20 +7,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>【原创】TCP/IP编程之echo | jianghua-我的小站</title>
-    <meta property="og:title" content="【原创】TCP/IP编程之echo - jianghua-我的小站">
+    <title>【原创】TCP/IP编程之echo(select版本) | jianghua-我的小站</title>
+    <meta property="og:title" content="【原创】TCP/IP编程之echo(select版本) - jianghua-我的小站">
     <meta property="og:type" content="article">
         
-    <meta property="article:published_time" content="2020-05-20T00:00:00&#43;08:00">
+    <meta property="article:published_time" content="2020-05-24T00:00:00&#43;08:00">
         
         
-    <meta property="article:modified_time" content="2020-05-20T00:00:00&#43;08:00">
+    <meta property="article:modified_time" content="2020-05-24T00:00:00&#43;08:00">
         
     <meta name="Keywords" content="">
-    <meta name="description" content="【原创】TCP/IP编程之echo">
+    <meta name="description" content="【原创】TCP/IP编程之echo(select版本)">
         
     <meta name="author" content="">
-    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Becho/">
+    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoselect%E7%89%88%E6%9C%AC/">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" href="/css/normalize.css">
@@ -70,65 +70,16 @@
                 <div class="res-cons">
                     <article class="post">
                         <header>
-                            <h1 class="post-title">【原创】TCP/IP编程之echo</h1>
+                            <h1 class="post-title">【原创】TCP/IP编程之echo(select版本)</h1>
                         </header>
                         <date class="post-meta meta-date">
-                            2020年5月20日
+                            2020年5月24日
                         </date>
                         
                         
                         
                         <div class="post-content">
-                            <p>客户端代码</p>
-
-<pre><code class="language-c">#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;sys/socket.h&gt;
-#include &lt;netinet/in.h&gt;
-#include &lt;arpa/inet.h&gt;
-#include &lt;assert.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;string.h&gt;
-
-int main(int argc, char *argv[]) {
-	
-	const char *ip = &quot;127.0.0.1&quot;;
-	int port = 8888;
-	
-	//初始化socket地址 
-	struct sockaddr_in server_address;
-	bzero(&amp;server_address, sizeof(server_address));
-	server_address.sin_family = AF_INET;
-	server_address.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &amp;server_address.sin_addr);
-	
-	//创建socket
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sockfd &lt; 0) {
-		printf(&quot;socket create error.&quot;);
-		return -1;
-	} 
-	
-	//connect服务器
-	if( connect(sockfd, (struct sockaddr *)&amp;server_address, sizeof(server_address)) &lt;0 ) {
-		printf(&quot;connect error.&quot;);
-		return -1;
-	} 
-	
-	//发送hello
-	const char *msg = &quot;hello&quot;;
-	int ret = send(sockfd, msg, strlen(msg), 0);
-	if(ret &lt; 0) {
-		printf(&quot;send msg error.&quot;);
-		return -1;
-	}
-	close(sockfd);
-		
-	return 0;
-}
-</code></pre>
-
-<p>服务端代码</p>
+                            <p>服务端代码</p>
 
 <pre><code class="language-c">#include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
@@ -142,8 +93,17 @@ int main(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 	
+	//ip和端口 
 	const char *ip = &quot;127.0.0.1&quot;;
 	int port = 8888;
+    
+	//定义fd_set数组 
+    fd_set readfds, allset;
+	fd_set exception_fds; 
+    //初始化
+	FD_ZERO(&amp;readfds);
+	FD_ZERO(&amp;allset);
+	FD_ZERO(&amp;exception_fds);
 	
 	//初始化socket地址 
 	struct sockaddr_in server_address;
@@ -153,14 +113,14 @@ int main(int argc, char *argv[]) {
 	inet_pton(AF_INET, ip, &amp;server_address.sin_addr);
 	
 	//创建socket
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sockfd &lt; 0) {
+	int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(listenfd &lt; 0) {
 		printf(&quot;socket create error.&quot;);
 		return -1;
 	} 
 	
 	//bind socket
-	int ret = bind(sockfd, (struct sockaddr *)&amp;server_address, sizeof(server_address));
+	int ret = bind(listenfd, (struct sockaddr *)&amp;server_address, sizeof(server_address));
 	if(ret &lt; 0) {
 	    printf(&quot;socket bind error.&quot;);
 		return -1;
@@ -168,7 +128,7 @@ int main(int argc, char *argv[]) {
 	
 	//listen socket
 	int backlog = 5;
-	int listen_ret = listen(sockfd, backlog);
+	int listen_ret = listen(listenfd, backlog);
 	if(listen_ret &lt; 0) {
 	    printf(&quot;socket listen error.&quot;);
 		return -1;
@@ -179,41 +139,117 @@ int main(int argc, char *argv[]) {
 	bzero(&amp;client_address, sizeof(client_address));
 	socklen_t client_address_len = sizeof(client_address);
 	
+	//为了简单描述，这里假设客户端发送过来的字符长度不会超过256
 	int BUF_SIZE = 256;
     char buf[BUF_SIZE];
-		
-	for(;;) {
-		int connfd = accept(sockfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
-		if(connfd &lt; 0) {
-			printf(&quot;accept error:%d&quot;,errno);
-			continue;
-		}
-		
-		printf(&quot;client is connect:%d\n&quot;,connfd);
-		
-		//accept成功,读取消息
-		memset(&amp;buf,'\0', BUF_SIZE);
-		int ret = recv(connfd, buf, BUF_SIZE-1, 0);
-		if(ret &lt; 0) {
-			printf(&quot;recv error:%d\n&quot;,errno);
-		} else if(ret == 0) {
-			printf(&quot;client is closed\n&quot;);
-	    } else {
-	    	printf(&quot;rev from client data:%s\n&quot;,buf);
-		}
-		
+    
+
+	
+	//把监听的sockfd加到监控集合中				
+	FD_SET(listenfd, &amp;allset);
+	FD_SET(listenfd, &amp;exception_fds);	
+	
+	int client_connects[FD_SETSIZE]; //FD_SETSIZE = 1024
+	int i;
+	for(i = 0; i &lt; FD_SETSIZE; i++) {
+		client_connects[i] = -1;
 	}
 	
+	int maxfd = listenfd;
+		
+	for(;;) {
+		readfds = allset;	 
+		printf(&quot;select...\n&quot;);	 
+		//select监听
+		int ready_nums = select(maxfd+1, &amp;readfds, NULL, &amp;exception_fds, NULL);
+		if(ready_nums &lt; 0) {
+			printf(&quot;select error\n&quot;);
+			break;
+		}
+		
+		if(FD_ISSET(listenfd, &amp;readfds)) {
+			printf(&quot;have new connect\n&quot;);
+			int connfd = accept(listenfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
+			if(connfd &lt; 0) {
+				printf(&quot;accept error:%d&quot;,errno);
+				continue;
+			}
+			
+			//把获取的fd放到 client_connects数组中
+			int j;
+			for(j = 0; j &lt; FD_SETSIZE; j++) {
+				if(client_connects[j] &lt; 0 ) {
+					client_connects[j] = connfd; //找一个没有被占用的位置保存起来 
+					break;
+				}
+			}
+		    
+			//放入到set检测数组中 
+			FD_SET(connfd, &amp;allset);
+			FD_SET(connfd, &amp;exception_fds);
+			maxfd = connfd;
+		}
+										
+	    //检测所有客户端连接fd
+	    int k;
+		for(k = 0; k &lt; FD_SETSIZE; k++ ) {	
+		    int checkfd = client_connects[k];
+		    if(checkfd &lt; 0) {
+		    	continue;
+			}		
+			printf(&quot;checkfd is %d\n&quot;,checkfd);
+			//检测可读事件
+			if(FD_ISSET(checkfd, &amp;readfds)) {
+				memset(&amp;buf,'\0', BUF_SIZE);
+				//非阻塞接受数据 
+				int ret = recv(checkfd, buf, BUF_SIZE-1, MSG_DONTWAIT);
+				if(ret &lt; 0) {
+					printf(&quot;recv error:%d\n&quot;,errno);
+					continue;
+				} else if(ret == 0) {
+					printf(&quot;client is closed\n&quot;);
+					client_connects[k] = -1;
+					FD_CLR(checkfd, &amp;allset); //清除位置 
+					FD_CLR(checkfd, &amp;exception_fds); //清除位置 
+					close(checkfd);
+					continue;
+			    } else {
+			    	printf(&quot;rev from client %d data:%s\n&quot;,checkfd,buf);
+				}
+			}
+		
+		} 
+			
+    }
+	
+	close(listenfd);
 	return 0;
 }
 </code></pre>
 
-<p>服务端运行结果</p>
+<p>使用NC作为客户端连接并发送数据测试</p>
 
-<pre><code>[root@192 echo]# ./echo_server 
-client is connect:4
-rev from client data:hello
+<pre><code class="language-c">[root@192 echo]# ./echo_server_select 
+select...
+have new connect
+checkfd is 4
+select...
+checkfd is 4
+rev from client 4 data:1111
+
+select...
+have new connect
+checkfd is 4
+checkfd is 5
+select...
+checkfd is 4
+checkfd is 5
+rev from client 5 data:2222
+
+select...
 </code></pre>
+
+<p>但我第一个连接的时候，每次check一个fd, 但我起2个连接的时候, select就会分别监控这2个fd上是否可读</p>
 
                         </div>
 
