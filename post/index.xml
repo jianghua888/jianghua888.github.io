@@ -6,10 +6,20 @@
     <description>Recent content in Posts on jianghua-我的小站</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 24 May 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 25 May 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="http://jianghua888.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>【原创】TCP/IP编程之echo(epoll版本)</title>
+      <link>http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/</link>
+      <pubDate>Mon, 25 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/</guid>
+      <description>服务端代码
+#include &amp;lt;stdio.h&amp;gt; #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;sys/socket.h&amp;gt; #include &amp;lt;netinet/in.h&amp;gt; #include &amp;lt;arpa/inet.h&amp;gt; #include &amp;lt;assert.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;string.h&amp;gt; #include &amp;lt;errno.h&amp;gt; #include &amp;lt;limits.h&amp;gt; #include &amp;lt;sys/epoll.h&amp;gt; int main(int argc, char *argv[]) { //ip和端口 const char *ip = &amp;quot;127.0.0.1&amp;quot;; int port = 8888; //初始化socket地址 struct sockaddr_in server_address; bzero(&amp;amp;server_address, sizeof(server_address)); server_address.sin_family = AF_INET; server_address.sin_port = htons(port); inet_pton(AF_INET, ip, &amp;amp;server_address.sin_addr); //创建socket int listenfd = socket(AF_INET, SOCK_STREAM, 0); if(listenfd &amp;lt; 0) { printf(&amp;quot;socket create error.&amp;quot;); return -1; } //bind socket int ret = bind(listenfd, (struct sockaddr *)&amp;amp;server_address, sizeof(server_address)); if(ret &amp;lt; 0) { printf(&amp;quot;socket bind error.</description>
+    </item>
     
     <item>
       <title>【原创】TCP/IP编程之echo(poll版本)</title>

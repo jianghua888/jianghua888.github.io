@@ -7,20 +7,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>【原创】TCP/IP编程之echo(poll版本) | jianghua-我的小站</title>
-    <meta property="og:title" content="【原创】TCP/IP编程之echo(poll版本) - jianghua-我的小站">
+    <title>【原创】TCP/IP编程之echo(epoll版本) | jianghua-我的小站</title>
+    <meta property="og:title" content="【原创】TCP/IP编程之echo(epoll版本) - jianghua-我的小站">
     <meta property="og:type" content="article">
         
-    <meta property="article:published_time" content="2020-05-24T00:00:00&#43;08:00">
+    <meta property="article:published_time" content="2020-05-25T00:00:00&#43;08:00">
         
         
-    <meta property="article:modified_time" content="2020-05-24T00:00:00&#43;08:00">
+    <meta property="article:modified_time" content="2020-05-25T00:00:00&#43;08:00">
         
     <meta name="Keywords" content="">
-    <meta name="description" content="【原创】TCP/IP编程之echo(poll版本)">
+    <meta name="description" content="【原创】TCP/IP编程之echo(epoll版本)">
         
     <meta name="author" content="">
-    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechopoll%E7%89%88%E6%9C%AC/">
+    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" href="/css/normalize.css">
@@ -70,10 +70,10 @@
                 <div class="res-cons">
                     <article class="post">
                         <header>
-                            <h1 class="post-title">【原创】TCP/IP编程之echo(poll版本)</h1>
+                            <h1 class="post-title">【原创】TCP/IP编程之echo(epoll版本)</h1>
                         </header>
                         <date class="post-meta meta-date">
-                            2020年5月24日
+                            2020年5月25日
                         </date>
                         
                         
@@ -91,19 +91,14 @@
 #include &lt;string.h&gt;
 #include &lt;errno.h&gt; 
 #include &lt;limits.h&gt; 
-#include &lt;poll.h&gt;
+#include &lt;sys/epoll.h&gt;
 
-
-#define MAX_CONN 10000
 
 int main(int argc, char *argv[]) {
 	
 	//ip和端口 
 	const char *ip = &quot;127.0.0.1&quot;;
 	int port = 8888;
-	
-	//poll pollfd 的结构体数组 
-	struct pollfd client[MAX_CONN]; 
 	
 	//初始化socket地址 
 	struct sockaddr_in server_address;
@@ -144,78 +139,65 @@ int main(int argc, char *argv[]) {
     char buf[BUF_SIZE];
     memset(&amp;buf,'\0', BUF_SIZE);
     
-    //把监听的listenfd放在第一个
-	client[0].fd = listenfd;
-	client[0].events = POLLRDNORM;//普通数据可读 
-		 
-    //pollfd初始化 
-	int i;
-	for(i = 1; i &lt; MAX_CONN; i++) {
-		client[i].fd = -1;
-	}
+    //事件数组
+	struct epoll_event events[1024]; 
 	
-	int max_index = 0;
-		
+	int epollfd = epoll_create(6);	
+	//把监听的fd放入到epoll中 
+	struct epoll_event event;
+	event.data.fd = listenfd;
+	event.events = EPOLLIN; 
+	epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &amp;event); 
+				
+	
 	for(;;) {
 		
-		printf(&quot;poll...\n&quot;);	 
+		printf(&quot;epoll_wait...\n&quot;);	 
 		//select监听
-		int ready_nums = poll(client,max_index+1,-1); //-1 永远等待 
+		int ready_nums = epoll_wait(epollfd, events, 1024, -1);
 		if(ready_nums &lt; 0) {
-			printf(&quot;poll error\n&quot;);
+			printf(&quot;epoll error\n&quot;);
 			break;
 		}
 		
-		//有新的连接过来 
-		if(client[0].revents &amp; POLLRDNORM) {
-			printf(&quot;have new connect\n&quot;);
-			int connfd = accept(listenfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
-			if(connfd &lt; 0) {
-				printf(&quot;accept error:%d&quot;,errno);
-				continue;
+		printf(&quot;epoll return.\n&quot;);
+		
+		//有事件触发， 遍历处理所有的可读事件 
+		int i;
+		for(i = 0; i &lt; ready_nums; i++) {			
+			//有新的连接过来 
+			int sockfd = events[i].data.fd;
+			if(sockfd == listenfd) {
+				printf(&quot;have new connect.\n&quot;);
+				int connfd = accept(listenfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
+				if(connfd &lt; 0) {
+					printf(&quot;accept error:%d&quot;,errno);
+					continue;
+				}
+				//初始化事件结构 
+				struct epoll_event event;
+				event.data.fd = connfd;
+				event.events = EPOLLIN; 
+				//新的连接加到epoll事件表中
+				epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &amp;event); 
 			}
 			
-			//把获取的fd放到 client_connects数组中
-			int j;
-			for(j = 1; j &lt;= MAX_CONN; j++) {
-				if(client[j].fd &lt; 0 ) {
-					client[j].fd = connfd; //找一个没有被占用的位置保存起来 
-					client[j].events = POLLRDNORM;
-					break;
-				}
-			}
-		    
-		    //更新最大下标 
-			max_index = j;
-		}
-										
-	    //检测所有客户端连接fd
-	    int k;
-		for(k = 1; k &lt;= max_index; k++ ) {	
-		    int checkfd = client[k].fd;
-		    if(checkfd &lt; 0) {
-		    	continue;
-			}		
-			printf(&quot;checkfd is %d\n&quot;,checkfd);
-			//检测可读事件
-			if(client[k].revents &amp; (POLLRDNORM | POLLERR)) {
-				//非阻塞接受数据 
-				int ret = recv(checkfd, buf, BUF_SIZE-1, MSG_DONTWAIT);
+			//处理可读事件
+			if(events[i].events &amp; EPOLLIN) {
+			    int ret = recv(sockfd, buf, BUF_SIZE-1, MSG_DONTWAIT);
 				if(ret &lt; 0) {
 					printf(&quot;recv error:%d\n&quot;,errno);
 					continue;
 				} else if(ret == 0) {
 					printf(&quot;client is closed\n&quot;);
-					client[k].fd = -1;
-					close(checkfd);
+					//从epoll事件表中删除
+					epoll_ctl(epollfd, EPOLL_CTL_DEL,sockfd, &amp;events[i]); 
 					continue;
 			    } else {
-			    	printf(&quot;rev from client %d data:%s\n&quot;,checkfd,buf);
+			    	printf(&quot;rev from client %d data:%s\n&quot;,sockfd,buf);
 				}
-			}
-		
-		} 
-			
+			} 
+		}
     }
 	
 	close(listenfd);
@@ -225,32 +207,28 @@ int main(int argc, char *argv[]) {
 
 <p>使用NC作为客户端连接并发送数据测试</p>
 
-<pre><code class="language-c">[root@192 echo]# ./echo_server_poll 
-poll...
-have new connect
-checkfd is 4
-poll...
-checkfd is 4
-rev from client 4 data:11111
+<pre><code class="language-c">[root@192 echo]# ./echo_server_epoll 
+epoll_wait...
+epoll return.
+have new connect.
+recv error:107
+epoll_wait...
+epoll return.
+rev from client 5 data:11111111
 
-poll...
-have new connect
-checkfd is 4
-checkfd is 5
-poll...
-checkfd is 4
-checkfd is 5
-rev from client 5 data:2222
+epoll_wait...
+epoll return.
+have new connect.
+recv error:107
+epoll_wait...
+epoll return.
+rev from client 6 data:222222
 
 
-poll...
-checkfd is 4
-checkfd is 5
-client is closed
-poll...
+epoll_wait...
 </code></pre>
 
-<p>当我第一个连接的时候，每次check一个fd, 当我起2个连接的时候, poll就会分别监控这2个fd上是否可读</p>
+<p>当我第一个连接的时候，每次check一个fd, 当我起2个连接的时候, epoll就会分别监控这2个fd上是否可读</p>
 
                         </div>
 
