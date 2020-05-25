@@ -7,8 +7,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>【原创】TCP/IP编程之echo(select版本) | jianghua-我的小站</title>
-    <meta property="og:title" content="【原创】TCP/IP编程之echo(select版本) - jianghua-我的小站">
+    <title>【原创】TCP/IP编程之echo(poll版本) | jianghua-我的小站</title>
+    <meta property="og:title" content="【原创】TCP/IP编程之echo(poll版本) - jianghua-我的小站">
     <meta property="og:type" content="article">
         
     <meta property="article:published_time" content="2020-05-24T00:00:00&#43;08:00">
@@ -17,10 +17,10 @@
     <meta property="article:modified_time" content="2020-05-24T00:00:00&#43;08:00">
         
     <meta name="Keywords" content="">
-    <meta name="description" content="【原创】TCP/IP编程之echo(select版本)">
+    <meta name="description" content="【原创】TCP/IP编程之echo(poll版本)">
         
     <meta name="author" content="">
-    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoselect%E7%89%88%E6%9C%AC/">
+    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechopoll%E7%89%88%E6%9C%AC/">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" href="/css/normalize.css">
@@ -70,7 +70,7 @@
                 <div class="res-cons">
                     <article class="post">
                         <header>
-                            <h1 class="post-title">【原创】TCP/IP编程之echo(select版本)</h1>
+                            <h1 class="post-title">【原创】TCP/IP编程之echo(poll版本)</h1>
                         </header>
                         <date class="post-meta meta-date">
                             2020年5月24日
@@ -90,20 +90,20 @@
 #include &lt;unistd.h&gt;
 #include &lt;string.h&gt;
 #include &lt;errno.h&gt; 
+#include &lt;limits.h&gt; 
+#include &lt;poll.h&gt;
+
+
+#define MAX_CONN 10000
 
 int main(int argc, char *argv[]) {
 	
 	//ip和端口 
 	const char *ip = &quot;127.0.0.1&quot;;
 	int port = 8888;
-    
-	//定义fd_set数组 
-    fd_set readfds, allset;
-	fd_set exception_fds; 
-    //初始化
-	FD_ZERO(&amp;readfds);
-	FD_ZERO(&amp;allset);
-	FD_ZERO(&amp;exception_fds);
+	
+	//poll pollfd 的结构体数组 
+	struct pollfd client[MAX_CONN]; 
 	
 	//初始化socket地址 
 	struct sockaddr_in server_address;
@@ -142,32 +142,32 @@ int main(int argc, char *argv[]) {
 	//为了简单描述，这里假设客户端发送过来的字符长度不会超过256
 	int BUF_SIZE = 256;
     char buf[BUF_SIZE];
+    memset(&amp;buf,'\0', BUF_SIZE);
     
-
-	
-	//把监听的sockfd加到监控集合中				
-	FD_SET(listenfd, &amp;allset);
-	FD_SET(listenfd, &amp;exception_fds);	
-	
-	int client_connects[FD_SETSIZE]; //FD_SETSIZE = 1024
+    //把监听的listenfd放在第一个
+	client[0].fd = listenfd;
+	client[0].events = POLLRDNORM;//普通数据可读 
+		 
+    //pollfd初始化 
 	int i;
-	for(i = 0; i &lt; FD_SETSIZE; i++) {
-		client_connects[i] = -1;
+	for(i = 1; i &lt; MAX_CONN; i++) {
+		client[i].fd = -1;
 	}
 	
-	int maxfd = listenfd;
+	int max_index = 0;
 		
 	for(;;) {
-		readfds = allset;	 
-		printf(&quot;select...\n&quot;);	 
+		
+		printf(&quot;poll...\n&quot;);	 
 		//select监听
-		int ready_nums = select(maxfd+1, &amp;readfds, NULL, &amp;exception_fds, NULL);
+		int ready_nums = poll(client,max_index+1,-1); //-1 永远等待 
 		if(ready_nums &lt; 0) {
-			printf(&quot;select error\n&quot;);
+			printf(&quot;poll error\n&quot;);
 			break;
 		}
 		
-		if(FD_ISSET(listenfd, &amp;readfds)) {
+		//有新的连接过来 
+		if(client[0].revents &amp; POLLRDNORM) {
 			printf(&quot;have new connect\n&quot;);
 			int connfd = accept(listenfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
 			if(connfd &lt; 0) {
@@ -177,30 +177,28 @@ int main(int argc, char *argv[]) {
 			
 			//把获取的fd放到 client_connects数组中
 			int j;
-			for(j = 0; j &lt; FD_SETSIZE; j++) {
-				if(client_connects[j] &lt; 0 ) {
-					client_connects[j] = connfd; //找一个没有被占用的位置保存起来 
+			for(j = 1; j &lt;= MAX_CONN; j++) {
+				if(client[j].fd &lt; 0 ) {
+					client[j].fd = connfd; //找一个没有被占用的位置保存起来 
+					client[j].events = POLLRDNORM;
 					break;
 				}
 			}
 		    
-			//放入到set检测数组中 
-			FD_SET(connfd, &amp;allset);
-			FD_SET(connfd, &amp;exception_fds);
-			maxfd = connfd;
+		    //更新最大下标 
+			max_index = j;
 		}
 										
 	    //检测所有客户端连接fd
 	    int k;
-		for(k = 0; k &lt; FD_SETSIZE; k++ ) {	
-		    int checkfd = client_connects[k];
+		for(k = 1; k &lt;= max_index; k++ ) {	
+		    int checkfd = client[k].fd;
 		    if(checkfd &lt; 0) {
 		    	continue;
 			}		
 			printf(&quot;checkfd is %d\n&quot;,checkfd);
 			//检测可读事件
-			if(FD_ISSET(checkfd, &amp;readfds)) {
-				memset(&amp;buf,'\0', BUF_SIZE);
+			if(client[k].revents &amp; (POLLRDNORM | POLLERR)) {
 				//非阻塞接受数据 
 				int ret = recv(checkfd, buf, BUF_SIZE-1, MSG_DONTWAIT);
 				if(ret &lt; 0) {
@@ -208,9 +206,7 @@ int main(int argc, char *argv[]) {
 					continue;
 				} else if(ret == 0) {
 					printf(&quot;client is closed\n&quot;);
-					client_connects[k] = -1;
-					FD_CLR(checkfd, &amp;allset); //清除位置 
-					FD_CLR(checkfd, &amp;exception_fds); //清除位置 
+					client[k].fd = -1;
 					close(checkfd);
 					continue;
 			    } else {
@@ -229,27 +225,32 @@ int main(int argc, char *argv[]) {
 
 <p>使用NC作为客户端连接并发送数据测试</p>
 
-<pre><code class="language-c">[root@192 echo]# ./echo_server_select 
-select...
+<pre><code class="language-c">[root@192 echo]# ./echo_server_poll 
+poll...
 have new connect
 checkfd is 4
-select...
+poll...
 checkfd is 4
-rev from client 4 data:1111
+rev from client 4 data:11111
 
-select...
+poll...
 have new connect
 checkfd is 4
 checkfd is 5
-select...
+poll...
 checkfd is 4
 checkfd is 5
 rev from client 5 data:2222
 
-select...
+
+poll...
+checkfd is 4
+checkfd is 5
+client is closed
+poll...
 </code></pre>
 
-<p>但我第一个连接的时候，每次check一个fd, 但我起2个连接的时候, select就会分别监控这2个fd上是否可读</p>
+<p>当我第一个连接的时候，每次check一个fd, 当我起2个连接的时候, poll就会分别监控这2个fd上是否可读</p>
 
                         </div>
 

@@ -65,6 +65,25 @@
                         <article class="post">
                             <header>
                                 <h1 class="post-title">
+                                    <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechopoll%E7%89%88%E6%9C%AC/" title="【原创】TCP/IP编程之echo(poll版本)" >【原创】TCP/IP编程之echo(poll版本)</a>
+                                </h1>
+                            </header>
+                            <date class="post-meta meta-date">
+                                2020年5月24日
+                            </date>
+                            
+                            <div class="post-content">
+                                服务端代码
+#include &lt;stdio.h&gt; #include &lt;stdlib.h&gt; #include &lt;sys/socket.h&gt; #include &lt;netinet/in.h&gt; #include &lt;arpa/inet.h&gt; #include &lt;assert.h&gt; #include &lt;unistd.h&gt; #include &lt;string.h&gt; #include &lt;errno.h&gt; #include &lt;limits.h&gt; #include &lt;poll.h&gt; #define MAX_CONN 10000 int main(int argc, char *argv[]) { //ip和端口 const char *ip = &quot;127.0.0.1&quot;; int port = 8888; //poll pollfd 的结构体数组 struct pollfd client[MAX_CONN]; //初始化socket地址 struct sockaddr_in server_address; bzero(&amp;server_address, sizeof(server_address)); server_address.sin_family = AF_INET; server_address.sin_port = htons(port); inet_pton(AF_INET, ip, &amp;server_address.sin_addr); //创建socket int listenfd = socket(AF_INET, SOCK_STREAM, 0); if(listenfd &lt; 0) { printf(&quot;socket create error.……
+                            </div>
+                            <p class="readmore"><a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechopoll%E7%89%88%E6%9C%AC/">阅读全文</a></p>
+                        </article>
+                    
+                    
+		    
+                        <article class="post">
+                            <header>
+                                <h1 class="post-title">
                                     <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoselect%E7%89%88%E6%9C%AC/" title="【原创】TCP/IP编程之echo(select版本)" >【原创】TCP/IP编程之echo(select版本)</a>
                                 </h1>
                             </header>
@@ -171,6 +190,10 @@ pid_t ==0 : 是子进程返回 , pid_t &gt;0 是父进程返回。
     <section class="widget">
         <h3 class="widget-title">最近文章</h3>
 <ul class="widget-list">
+    
+    <li>
+        <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechopoll%E7%89%88%E6%9C%AC/" title="【原创】TCP/IP编程之echo(poll版本)">【原创】TCP/IP编程之echo(poll版本)</a>
+    </li>
     
     <li>
         <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoselect%E7%89%88%E6%9C%AC/" title="【原创】TCP/IP编程之echo(select版本)">【原创】TCP/IP编程之echo(select版本)</a>
