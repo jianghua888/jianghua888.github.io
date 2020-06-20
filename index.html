@@ -65,6 +65,34 @@
                         <article class="post">
                             <header>
                                 <h1 class="post-title">
+                                    <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E5%B8%B8%E7%94%A8socket%E7%B3%BB%E7%BB%9F%E5%87%BD%E6%95%B0%E6%80%BB%E7%BB%93/" title="【原创】常用socket系统函数总结" >【原创】常用socket系统函数总结</a>
+                                </h1>
+                            </header>
+                            <date class="post-meta meta-date">
+                                2020年6月1日
+                            </date>
+                            
+                            <div class="post-content">
+                                int socket(int family, int type, int protocol) 创建一个socket, 成功返回非负的描述符，失败返回-1.  int family : 协议， AF_INET（IPV4协议） AF_INET6 （IPV6协议），AF_LOCAL (unix域协议) 。。。
+int type: SOCK_STREAM (TCP字节流套接字), SOCK_DGRAM (数据包套接字)&hellip;.
+int protocol : 一般设置为0 （IPPROTO_TCP， IPPROTO_UDP, IPPROTO_SCTP）
+int connect(int sockfd, const struct sockaddr *servaddr, socklen_t addrlen) 发起TCP连接，成功0 失败返回-1  int sockfd：socket创建的描述符
+const struct sockaddr *servaddr：通用套接字地址结构指针
+socklen_t addrlen : 地址结构的大小
+　通用地址结构：
+　struct sockaddr {
+​ uint8_t sa_len;
+​ sa_family_t sa_family;
+​ char sa_data[14];……
+                            </div>
+                            <p class="readmore"><a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E5%B8%B8%E7%94%A8socket%E7%B3%BB%E7%BB%9F%E5%87%BD%E6%95%B0%E6%80%BB%E7%BB%93/">阅读全文</a></p>
+                        </article>
+                    
+                    
+		    
+                        <article class="post">
+                            <header>
+                                <h1 class="post-title">
                                     <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/" title="【原创】TCP/IP编程之echo(epoll版本)" >【原创】TCP/IP编程之echo(epoll版本)</a>
                                 </h1>
                             </header>
@@ -159,7 +187,7 @@
                         <article class="post">
                             <header>
                                 <h1 class="post-title">
-                                    <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/" title="【原创】环境编程之进程" >【原创】环境编程之进程</a>
+                                    <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/" title="【原创】系统编程之进程" >【原创】系统编程之进程</a>
                                 </h1>
                             </header>
                             <date class="post-meta meta-date">
@@ -183,7 +211,7 @@ pid_t ==0 : 是子进程返回 , pid_t &gt;0 是父进程返回。
 1.2 进程几种终止的方式
  在main函数中return 调用exit 调用_exit或者_Exit 最后一个子线程return 最后一个子线程调用pthread_exit 调用abort 当进程收到某种信号 最后一个线程对取消请求做出响应  2. 进程在内存中的布局 ……
                             </div>
-                            <p class="readmore"><a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/">阅读全文</a></p>
+                            <p class="readmore"><a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/">阅读全文</a></p>
                         </article>
                     
                     
@@ -211,6 +239,10 @@ pid_t ==0 : 是子进程返回 , pid_t &gt;0 是父进程返回。
 <ul class="widget-list">
     
     <li>
+        <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E5%B8%B8%E7%94%A8socket%E7%B3%BB%E7%BB%9F%E5%87%BD%E6%95%B0%E6%80%BB%E7%BB%93/" title="【原创】常用socket系统函数总结">【原创】常用socket系统函数总结</a>
+    </li>
+    
+    <li>
         <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/" title="【原创】TCP/IP编程之echo(epoll版本)">【原创】TCP/IP编程之echo(epoll版本)</a>
     </li>
     
@@ -231,7 +263,7 @@ pid_t ==0 : 是子进程返回 , pid_t &gt;0 是父进程返回。
     </li>
     
     <li>
-        <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/" title="【原创】环境编程之进程">【原创】环境编程之进程</a>
+        <a href="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/" title="【原创】系统编程之进程">【原创】系统编程之进程</a>
     </li>
     
 </ul>

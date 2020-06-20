@@ -7,20 +7,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>【原创】TCP/IP编程之echo(epoll版本) | jianghua-我的小站</title>
-    <meta property="og:title" content="【原创】TCP/IP编程之echo(epoll版本) - jianghua-我的小站">
+    <title>【原创】系统编程之进程 | jianghua-我的小站</title>
+    <meta property="og:title" content="【原创】系统编程之进程 - jianghua-我的小站">
     <meta property="og:type" content="article">
         
-    <meta property="article:published_time" content="2020-05-25T00:00:00&#43;08:00">
+    <meta property="article:published_time" content="2020-05-17T00:00:00&#43;08:00">
         
         
-    <meta property="article:modified_time" content="2020-05-25T00:00:00&#43;08:00">
+    <meta property="article:modified_time" content="2020-05-17T00:00:00&#43;08:00">
         
     <meta name="Keywords" content="">
-    <meta name="description" content="【原创】TCP/IP编程之echo(epoll版本)">
+    <meta name="description" content="【原创】系统编程之进程">
         
     <meta name="author" content="">
-    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/">
+    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B/">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" href="/css/normalize.css">
@@ -70,165 +70,63 @@
                 <div class="res-cons">
                     <article class="post">
                         <header>
-                            <h1 class="post-title">【原创】TCP/IP编程之echo(epoll版本)</h1>
+                            <h1 class="post-title">【原创】系统编程之进程</h1>
                         </header>
                         <date class="post-meta meta-date">
-                            2020年5月25日
+                            2020年5月17日
                         </date>
                         
                         
                         
                         <div class="post-content">
-                            <p>服务端代码</p>
+                            
 
-<pre><code class="language-c">#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;sys/socket.h&gt;
-#include &lt;netinet/in.h&gt;
-#include &lt;arpa/inet.h&gt;
-#include &lt;assert.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;string.h&gt;
-#include &lt;errno.h&gt; 
-#include &lt;limits.h&gt; 
-#include &lt;sys/epoll.h&gt;
+<h1 id="原创总结-环境编程之进程">【原创总结】环境编程之进程</h1>
 
+<p>​     <strong>进程</strong>是我们操作系统相当重要的一个抽象，描述的白话一点，就是我们电脑上正在运行的程序。比如我们正在登陆的电脑微信，它就是一个进程。当我们的微信在没有被计算机加载到内存中去执行的时候，其实就是一堆躺在硬盘上睡大觉的二进制代码，那它的状态就不叫进程，而是叫程序。所以说，进程是一种活动状态，是有生命周期的。下面我们会详细的来说说，进程相关的一些知识。(主要围绕Linux系统展开)</p>
 
-int main(int argc, char *argv[]) {
-	
-	//ip和端口 
-	const char *ip = &quot;127.0.0.1&quot;;
-	int port = 8888;
-	
-	//初始化socket地址 
-	struct sockaddr_in server_address;
-	bzero(&amp;server_address, sizeof(server_address));
-	server_address.sin_family = AF_INET;
-	server_address.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &amp;server_address.sin_addr);
-	
-	//创建socket
-	int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(listenfd &lt; 0) {
-		printf(&quot;socket create error.&quot;);
-		return -1;
-	} 
-	
-	//bind socket
-	int ret = bind(listenfd, (struct sockaddr *)&amp;server_address, sizeof(server_address));
-	if(ret &lt; 0) {
-	    printf(&quot;socket bind error.&quot;);
-		return -1;
-	} 
-	
-	//listen socket
-	int backlog = 5;
-	int listen_ret = listen(listenfd, backlog);
-	if(listen_ret &lt; 0) {
-	    printf(&quot;socket listen error.&quot;);
-		return -1;
-	}
-	
-	//定义连接的地址结构 
-	struct sockaddr_in client_address;
-	bzero(&amp;client_address, sizeof(client_address));
-	socklen_t client_address_len = sizeof(client_address);
-	
-	//为了简单描述，这里假设客户端发送过来的字符长度不会超过256
-	int BUF_SIZE = 256;
-    char buf[BUF_SIZE];
-    memset(&amp;buf,'\0', BUF_SIZE);
-    
-    //事件数组
-	struct epoll_event events[1024]; 
-	
-	int epollfd = epoll_create(6);	
-	//把监听的fd放入到epoll中 
-	struct epoll_event event;
-	event.data.fd = listenfd;
-	event.events = EPOLLIN; 
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &amp;event); 
-				
-	
-	for(;;) {
-		
-		printf(&quot;epoll_wait...\n&quot;);	 
-		//select监听
-		int ready_nums = epoll_wait(epollfd, events, 1024, -1);
-		if(ready_nums &lt; 0) {
-			printf(&quot;epoll error\n&quot;);
-			break;
-		}
-		
-		printf(&quot;epoll return.\n&quot;);
-		
-		//有事件触发， 遍历处理所有的可读事件 
-		int i;
-		for(i = 0; i &lt; ready_nums; i++) {			
-			//有新的连接过来 
-			int sockfd = events[i].data.fd;
-			if(sockfd == listenfd) {
-				printf(&quot;have new connect.\n&quot;);
-				int connfd = accept(listenfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
-				if(connfd &lt; 0) {
-					printf(&quot;accept error:%d&quot;,errno);
-					continue;
-				}
-				//初始化事件结构 
-				struct epoll_event event;
-				event.data.fd = connfd;
-				event.events = EPOLLIN; 
-				//新的连接加到epoll事件表中
-				epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &amp;event); 
-			}
-			
-			//处理可读事件
-			if(events[i].events &amp; EPOLLIN) {
-			    int ret = recv(sockfd, buf, BUF_SIZE-1, MSG_DONTWAIT);
-				if(ret &lt; 0) {
-					printf(&quot;recv error:%d\n&quot;,errno);
-					continue;
-				} else if(ret == 0) {
-					printf(&quot;client is closed\n&quot;);
-					//从epoll事件表中删除
-					epoll_ctl(epollfd, EPOLL_CTL_DEL,sockfd, &amp;events[i]); 
-					continue;
-			    } else {
-			    	printf(&quot;rev from client %d data:%s\n&quot;,sockfd,buf);
-				}
-			} 
-		}
-    }
-	
-	close(listenfd);
-	return 0;
-}
-</code></pre>
+<ol>
+<li><p>进程的创建，终止</p></li>
 
-<p>使用NC作为客户端连接并发送数据测试</p>
+<li><p>进程在内存中的布局</p></li>
 
-<pre><code class="language-c">[root@192 echo]# ./echo_server_epoll 
-epoll_wait...
-epoll return.
-have new connect.
-recv error:107
-epoll_wait...
-epoll return.
-rev from client 5 data:11111111
+<li><p>进程的几种状态</p></li>
 
-epoll_wait...
-epoll return.
-have new connect.
-recv error:107
-epoll_wait...
-epoll return.
-rev from client 6 data:222222
+<li><p>进程的调度</p></li>
 
+<li><p>进程在内核中的表示</p></li>
+</ol>
 
-epoll_wait...
-</code></pre>
+<h2 id="1-进程的创建-终止">1. 进程的创建，终止</h2>
 
-<p>当我第一个连接的时候，每次check一个fd, 当我起2个连接的时候, epoll就会分别监控这2个fd上是否可读</p>
+<p>​    在我们的Linux系统中，创建一个进程，需要用到一个系统提供给我们的一个系统调用。（系统调用：就是我们编写的用户程序，是没有权限越过操作系统的内核直接去访问一些资源，比如磁盘上的数据，为了安全和统一管理，提供了一些接口，我们就可以通过这些接口去访问了）一般我们叫syscall.   fork() 正是系统提供给我们的主动去创建一个进程的系统调用。  定义如下：</p>
+
+<p>​    <code>pid_t fork(void)</code></p>
+
+<p>fork没有参数，返回值是pid_t, 是一个非负整数，也就是我们的进程ID。 fork()调用后，返回2次，跟我们平时使用方法不太一样，这里要注意呀。 2种返回结果如下：</p>
+
+<p>pid_t ==0 : 是子进程返回 ,  pid_t &gt;0 是父进程返回。</p>
+
+<p><strong>思考点，这里为什么返回值等于0是子进程，大于0是父进程呢？</strong></p>
+
+<p>在APUE中，有详细描述。理由是：子进程把进程ID返回给父进程，因为一个父进程可以有多个子进程，没有其他的方式和函数可以获取到子进程的PID号。 而把0返回给子进程呢，则是一个子进程只有一个父进程，子进程可以通过getppid的方式获取到父进程的PID。</p>
+
+<p>当我们调用fork后，子进程比较简单粗暴的拷贝了父进程的东西，比如父进程的数据空间，堆和栈等，但是代码段是共享的。后面在进程的布局当中会详细讲到进程在内存中的一个具体形态。</p>
+
+<p>1.2 进程几种终止的方式</p>
+
+<ol>
+<li>在main函数中return</li>
+<li>调用exit</li>
+<li>调用_exit或者_Exit</li>
+<li>最后一个子线程return</li>
+<li>最后一个子线程调用pthread_exit</li>
+<li>调用abort</li>
+<li>当进程收到某种信号</li>
+<li>最后一个线程对取消请求做出响应</li>
+</ol>
+
+<h2 id="2-进程在内存中的布局">2. 进程在内存中的布局</h2>
 
                         </div>
 

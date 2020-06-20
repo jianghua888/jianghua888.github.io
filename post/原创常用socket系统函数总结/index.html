@@ -7,20 +7,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>【原创】TCP/IP编程之echo(epoll版本) | jianghua-我的小站</title>
-    <meta property="og:title" content="【原创】TCP/IP编程之echo(epoll版本) - jianghua-我的小站">
+    <title>【原创】常用socket系统函数总结 | jianghua-我的小站</title>
+    <meta property="og:title" content="【原创】常用socket系统函数总结 - jianghua-我的小站">
     <meta property="og:type" content="article">
         
-    <meta property="article:published_time" content="2020-05-25T00:00:00&#43;08:00">
+    <meta property="article:published_time" content="2020-06-01T00:00:00&#43;08:00">
         
         
-    <meta property="article:modified_time" content="2020-05-25T00:00:00&#43;08:00">
+    <meta property="article:modified_time" content="2020-06-01T00:00:00&#43;08:00">
         
     <meta name="Keywords" content="">
-    <meta name="description" content="【原创】TCP/IP编程之echo(epoll版本)">
+    <meta name="description" content="【原创】常用socket系统函数总结">
         
     <meta name="author" content="">
-    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9Btcpip%E7%BC%96%E7%A8%8B%E4%B9%8Bechoepoll%E7%89%88%E6%9C%AC/">
+    <meta property="og:url" content="http://jianghua888.github.io/post/%E5%8E%9F%E5%88%9B%E5%B8%B8%E7%94%A8socket%E7%B3%BB%E7%BB%9F%E5%87%BD%E6%95%B0%E6%80%BB%E7%BB%93/">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" href="/css/normalize.css">
@@ -70,165 +70,106 @@
                 <div class="res-cons">
                     <article class="post">
                         <header>
-                            <h1 class="post-title">【原创】TCP/IP编程之echo(epoll版本)</h1>
+                            <h1 class="post-title">【原创】常用socket系统函数总结</h1>
                         </header>
                         <date class="post-meta meta-date">
-                            2020年5月25日
+                            2020年6月1日
                         </date>
                         
                         
                         
                         <div class="post-content">
-                            <p>服务端代码</p>
+                            
 
-<pre><code class="language-c">#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;sys/socket.h&gt;
-#include &lt;netinet/in.h&gt;
-#include &lt;arpa/inet.h&gt;
-#include &lt;assert.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;string.h&gt;
-#include &lt;errno.h&gt; 
-#include &lt;limits.h&gt; 
-#include &lt;sys/epoll.h&gt;
+<h3 id="int-socket-int-family-int-type-int-protocol">int socket(int family,  int type, int protocol)</h3>
 
-
-int main(int argc, char *argv[]) {
-	
-	//ip和端口 
-	const char *ip = &quot;127.0.0.1&quot;;
-	int port = 8888;
-	
-	//初始化socket地址 
-	struct sockaddr_in server_address;
-	bzero(&amp;server_address, sizeof(server_address));
-	server_address.sin_family = AF_INET;
-	server_address.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &amp;server_address.sin_addr);
-	
-	//创建socket
-	int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(listenfd &lt; 0) {
-		printf(&quot;socket create error.&quot;);
-		return -1;
-	} 
-	
-	//bind socket
-	int ret = bind(listenfd, (struct sockaddr *)&amp;server_address, sizeof(server_address));
-	if(ret &lt; 0) {
-	    printf(&quot;socket bind error.&quot;);
-		return -1;
-	} 
-	
-	//listen socket
-	int backlog = 5;
-	int listen_ret = listen(listenfd, backlog);
-	if(listen_ret &lt; 0) {
-	    printf(&quot;socket listen error.&quot;);
-		return -1;
-	}
-	
-	//定义连接的地址结构 
-	struct sockaddr_in client_address;
-	bzero(&amp;client_address, sizeof(client_address));
-	socklen_t client_address_len = sizeof(client_address);
-	
-	//为了简单描述，这里假设客户端发送过来的字符长度不会超过256
-	int BUF_SIZE = 256;
-    char buf[BUF_SIZE];
-    memset(&amp;buf,'\0', BUF_SIZE);
-    
-    //事件数组
-	struct epoll_event events[1024]; 
-	
-	int epollfd = epoll_create(6);	
-	//把监听的fd放入到epoll中 
-	struct epoll_event event;
-	event.data.fd = listenfd;
-	event.events = EPOLLIN; 
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &amp;event); 
-				
-	
-	for(;;) {
-		
-		printf(&quot;epoll_wait...\n&quot;);	 
-		//select监听
-		int ready_nums = epoll_wait(epollfd, events, 1024, -1);
-		if(ready_nums &lt; 0) {
-			printf(&quot;epoll error\n&quot;);
-			break;
-		}
-		
-		printf(&quot;epoll return.\n&quot;);
-		
-		//有事件触发， 遍历处理所有的可读事件 
-		int i;
-		for(i = 0; i &lt; ready_nums; i++) {			
-			//有新的连接过来 
-			int sockfd = events[i].data.fd;
-			if(sockfd == listenfd) {
-				printf(&quot;have new connect.\n&quot;);
-				int connfd = accept(listenfd, (struct sockaddr *)&amp;client_address, &amp;client_address_len);
-				if(connfd &lt; 0) {
-					printf(&quot;accept error:%d&quot;,errno);
-					continue;
-				}
-				//初始化事件结构 
-				struct epoll_event event;
-				event.data.fd = connfd;
-				event.events = EPOLLIN; 
-				//新的连接加到epoll事件表中
-				epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &amp;event); 
-			}
-			
-			//处理可读事件
-			if(events[i].events &amp; EPOLLIN) {
-			    int ret = recv(sockfd, buf, BUF_SIZE-1, MSG_DONTWAIT);
-				if(ret &lt; 0) {
-					printf(&quot;recv error:%d\n&quot;,errno);
-					continue;
-				} else if(ret == 0) {
-					printf(&quot;client is closed\n&quot;);
-					//从epoll事件表中删除
-					epoll_ctl(epollfd, EPOLL_CTL_DEL,sockfd, &amp;events[i]); 
-					continue;
-			    } else {
-			    	printf(&quot;rev from client %d data:%s\n&quot;,sockfd,buf);
-				}
-			} 
-		}
-    }
-	
-	close(listenfd);
-	return 0;
-}
+<pre><code>创建一个socket, 成功返回非负的描述符，失败返回-1. 
 </code></pre>
 
-<p>使用NC作为客户端连接并发送数据测试</p>
+<p>int family :  协议， AF_INET（IPV4协议） AF_INET6 （IPV6协议），AF_LOCAL (unix域协议) 。。。</p>
 
-<pre><code class="language-c">[root@192 echo]# ./echo_server_epoll 
-epoll_wait...
-epoll return.
-have new connect.
-recv error:107
-epoll_wait...
-epoll return.
-rev from client 5 data:11111111
+<p>int type:  SOCK_STREAM (TCP字节流套接字),   SOCK_DGRAM (数据包套接字)&hellip;.</p>
 
-epoll_wait...
-epoll return.
-have new connect.
-recv error:107
-epoll_wait...
-epoll return.
-rev from client 6 data:222222
+<p>int protocol :  一般设置为0 （IPPROTO_TCP， IPPROTO_UDP, IPPROTO_SCTP）</p>
 
+<h3 id="int-connect-int-sockfd-const-struct-sockaddr-servaddr-socklen-t-addrlen">int connect(int sockfd, const struct sockaddr *servaddr, socklen_t addrlen)</h3>
 
-epoll_wait...
+<pre><code>发起TCP连接，成功0 失败返回-1
 </code></pre>
 
-<p>当我第一个连接的时候，每次check一个fd, 当我起2个连接的时候, epoll就会分别监控这2个fd上是否可读</p>
+<p>int sockfd：socket创建的描述符</p>
+
+<p>const struct sockaddr *servaddr：通用套接字地址结构指针</p>
+
+<p>socklen_t addrlen :  地址结构的大小</p>
+
+<p>　　通用地址结构：</p>
+
+<p>　　　struct sockaddr {</p>
+
+<p>​                   uint8_t sa_len;</p>
+
+<p>​                   sa_family_t sa_family;</p>
+
+<p>​                   char     sa_data[14];</p>
+
+<p>​            }</p>
+
+<p>​      IPV4 地址结构：</p>
+
+<p>​      struct in_addr {</p>
+
+<p>​            in_addr_t s_addr;</p>
+
+<p>​     }</p>
+
+<p>​    struct sockaddr_in {</p>
+
+<p>​          uint8_t    sin_len;</p>
+
+<p>​          sa_family_t  sin_family;</p>
+
+<p>​          int_port_t    sin_port;</p>
+
+<p>​          struct in_addr sin_addr;</p>
+
+<p>​         char sin_zero[8];</p>
+
+<p>}</p>
+
+<h3 id="int-bind-int-sockfd-const-struct-sockaddr-myaddr-socklen-t-addrlen">int bind(int sockfd, const struct sockaddr *myaddr, socklen_t addrlen)</h3>
+
+<pre><code>把sockfd 与地址进行关联绑定，成功返回０，失败返回－１
+</code></pre>
+
+<p>​      int sockfd :描述符</p>
+
+<p>​      const struct sockaddr *myaddr :　地址指针</p>
+
+<p>　　socklen_t addrlen：　地址大小</p>
+
+<h3 id="int-listen-int-sockfd-int-backlog">int listen(int sockfd, int backlog);</h3>
+
+<pre><code>监听套接字，成功返回0，失败返回-1
+</code></pre>
+
+<p>int sockfd：要监听的ｓｏｃｋｆｄ</p>
+
+<p>int backlog:  监听队列的最大连接数,</p>
+
+<h3 id="int-accpet-int-sockfd-struct-sockaddr-cliaddr-socklen-t-addrlen">int accpet(int sockfd, struct sockaddr *cliaddr, socklen_t  *addrlen);</h3>
+
+<pre><code>从已经完成三次握手的连接队列中获取一个连接，如果队列为空，则进程进入睡眠状态
+</code></pre>
+
+<p>int sockfd : 监听的sockfd 描述符</p>
+
+<p>struct sockaddr *cliaddr : 客服端的结构地址</p>
+
+<p>socklen_t  *addrlen ：结构地址大小</p>
+
+<pre><code>备注：内核为每个客户端连接创建一个新的套接字，返回的是新的ｓｏｃｋ描述符
+</code></pre>
 
                         </div>
 
